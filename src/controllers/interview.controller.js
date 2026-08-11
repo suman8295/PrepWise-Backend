@@ -1,5 +1,5 @@
 const { PDFParse } = require("pdf-parse")
-const { generateInterviewReport, generateResumePdf } = require("../services/ai.service")
+const { generateInterviewReport, generateResumePdf, generateCoverLetterPdf } = require("../services/ai.service")
 const interviewReportModel = require("../models/interviewReport.model")
 
 async function extractResumeText(fileBuffer) {
@@ -109,4 +109,23 @@ async function generateResumePdfController(req, res) {
     res.send(pdfBuffer)
 }
 
-module.exports = { generateInterViewReportController, getInterviewReportByIdController, getAllInterviewReportsController, generateResumePdfController }
+/**
+ * @description Controller to generate cover letter PDF based on user self description, resume and job description.
+ */
+async function generateCoverLetterPdfController(req, res) {
+    const { interviewReportId } = req.params
+    const interviewReport = await interviewReportModel.findById(interviewReportId)
+    if (!interviewReport) {
+        return res.status(404).json({
+            message: "Interview report not found."
+        })
+    }
+    const { resume, jobDescription, selfDescription } = interviewReport
+    const pdfBuffer = await generateCoverLetterPdf({ resume, jobDescription, selfDescription })
+    res.set({
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename=cover_letter_${interviewReportId}.pdf`
+    })
+    res.send(pdfBuffer)
+}
+module.exports = { generateInterViewReportController, getInterviewReportByIdController, getAllInterviewReportsController, generateResumePdfController, generateCoverLetterPdfController }
